@@ -21,10 +21,12 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: gradle
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
 
       - name: Grant execute permission for gradlew
-        run: chmod +x gradlew || true
+        run: chmod +x gradlew
 
       - name: Create local .env if not present
         run: |
@@ -32,15 +34,17 @@ jobs:
             cp .env.example .env 2>/dev/null || echo "GEMINI_API_KEY=" > .env
           fi
 
-      - name: Run Unit Tests
-        run: gradle :app:testDebugUnitTest --no-daemon
-
       - name: Build Debug APK
-        run: gradle :app:assembleDebug --no-daemon
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Run Unit Tests
+        run: ./gradlew testDebugUnitTest --no-daemon --stacktrace
 
       - name: Upload Debug APK Artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: calc-business-pro-debug-apk
+          name: CalcBusinessPro-Debug-APK
           path: app/build/outputs/apk/debug/*.apk
           retention-days: 14
+          if-no-files-found: warn

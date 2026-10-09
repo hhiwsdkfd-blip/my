@@ -10,12 +10,22 @@ object ScientificMath {
 
     /**
      * Evaluates a mathematical expression string.
-     * Supports: +, -, *, /, %, ^, parentheses, functions (sin, cos, tan, asin, acos, atan, ln, log, sqrt, cbrt, abs, fact),
-     * and constants (pi, e).
+     * Supports:
+     * - Exponentials: e^x, 10^x, exp(x)
+     * - Logarithms: ln, log (log10), log2
+     * - Roots: sqrt (√), cbrt (∛)
+     * - Powers: x^y, x^2 (x²), x^3 (x³)
+     * - Trigonometric: sin, cos, tan
+     * - Inverse Trigonometric: asin (sin⁻¹), acos (cos⁻¹), atan (tan⁻¹)
+     * - Hyperbolic: sinh, cosh, tanh
+     * - Factorial: !
+     * - Constants: pi (π), e, phi (φ)
+     * - Implicit multiplication: 2(3), 2sin(30), 3pi, etc.
      */
     fun evaluate(expression: String, angleUnit: AngleUnit = AngleUnit.DEGREE): Double {
         val sanitized = sanitizeExpression(expression)
-        val tokens = tokenize(sanitized)
+        val rawTokens = tokenize(sanitized)
+        val tokens = insertImplicitMultiplication(rawTokens)
         val parser = ExpressionParser(tokens, angleUnit)
         return parser.parse()
     }
@@ -27,6 +37,9 @@ object ScientificMath {
             .replace("−", "-")
             .replace("π", "pi")
             .replace("√", "sqrt")
+            .replace("∛", "cbrt")
+            .replace("²", "^2")
+            .replace("³", "^3")
             .replace(" ", "")
     }
 
@@ -62,6 +75,39 @@ object ScientificMath {
             }
         }
         return tokens
+    }
+
+    private fun insertImplicitMultiplication(tokens: List<String>): List<String> {
+        if (tokens.isEmpty()) return tokens
+        val result = mutableListOf<String>()
+
+        fun isValueOrClosing(token: String): Boolean {
+            return token == ")" || token == "!" || token.toDoubleOrNull() != null ||
+                    token.lowercase() in listOf("pi", "e", "phi")
+        }
+
+        fun isValueOrOpeningOrFunction(token: String): Boolean {
+            return token == "(" || token.toDoubleOrNull() != null ||
+                    token.lowercase() in listOf(
+                "pi", "e", "phi",
+                "sin", "cos", "tan", "asin", "acos", "atan",
+                "sinh", "cosh", "tanh",
+                "ln", "log", "log10", "log2",
+                "sqrt", "cbrt", "exp", "abs", "fact"
+            )
+        }
+
+        for (i in tokens.indices) {
+            result.add(tokens[i])
+            if (i < tokens.size - 1) {
+                val current = tokens[i]
+                val next = tokens[i + 1]
+                if (isValueOrClosing(current) && isValueOrOpeningOrFunction(next)) {
+                    result.add("*")
+                }
+            }
+        }
+        return result
     }
 
     private class ExpressionParser(
@@ -158,7 +204,8 @@ object ScientificMath {
                 // Functions
                 "sin", "cos", "tan", "asin", "acos", "atan",
                 "sinh", "cosh", "tanh",
-                "ln", "log", "log10", "log2", "sqrt", "cbrt", "abs", "fact" -> {
+                "ln", "log", "log10", "log2",
+                "sqrt", "cbrt", "exp", "abs", "fact" -> {
                     parseFunction(token.lowercase())
                 }
                 else -> throw IllegalArgumentException("Unknown symbol: $token")
@@ -193,10 +240,12 @@ object ScientificMath {
                     r
                 }
                 "asin" -> {
+                    if (arg < -1.0 || arg > 1.0) throw ArithmeticException("asin domain error: must be in [-1, 1]")
                     val rad = asin(arg)
                     if (angleUnit == AngleUnit.DEGREE) Math.toDegrees(rad) else rad
                 }
                 "acos" -> {
+                    if (arg < -1.0 || arg > 1.0) throw ArithmeticException("acos domain error: must be in [-1, 1]")
                     val rad = acos(arg)
                     if (angleUnit == AngleUnit.DEGREE) Math.toDegrees(rad) else rad
                 }
@@ -207,6 +256,7 @@ object ScientificMath {
                 "sinh" -> sinh(arg)
                 "cosh" -> cosh(arg)
                 "tanh" -> tanh(arg)
+                "exp" -> exp(arg)
                 "ln" -> {
                     if (arg <= 0) throw ArithmeticException("ln of non-positive number")
                     ln(arg)

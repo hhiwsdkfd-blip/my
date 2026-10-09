@@ -52,6 +52,92 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
     private val _memoryValue = MutableStateFlow(0.0)
     val memoryValue: StateFlow<Double> = _memoryValue.asStateFlow()
 
+    // Advanced Multi-Slot Memory (M1, M2, M3, M4, M5)
+    private val _memorySlots = MutableStateFlow(
+        linkedMapOf(
+            "M1" to 0.0,
+            "M2" to 0.0,
+            "M3" to 0.0,
+            "M4" to 0.0,
+            "M5" to 0.0
+        )
+    )
+    val memorySlots: StateFlow<Map<String, Double>> = _memorySlots.asStateFlow()
+
+    private val _selectedMemorySlot = MutableStateFlow("M1")
+    val selectedMemorySlot: StateFlow<String> = _selectedMemorySlot.asStateFlow()
+
+    private val _isMemoryDialogVisible = MutableStateFlow(false)
+    val isMemoryDialogVisible: StateFlow<Boolean> = _isMemoryDialogVisible.asStateFlow()
+
+    fun setMemoryDialogVisible(visible: Boolean) {
+        _isMemoryDialogVisible.value = visible
+    }
+
+    fun selectMemorySlot(slot: String) {
+        if (_memorySlots.value.containsKey(slot)) {
+            _selectedMemorySlot.value = slot
+            _memoryValue.value = _memorySlots.value[slot] ?: 0.0
+        }
+    }
+
+    private fun getCurrentActiveNumber(): Double? {
+        val res = _liveResult.value.replace(",", "").toDoubleOrNull()
+        if (res != null) return res
+        return _expression.value.replace(",", "").toDoubleOrNull()
+    }
+
+    fun memoryStore(slot: String = _selectedMemorySlot.value) {
+        val num = getCurrentActiveNumber() ?: return
+        val map = LinkedHashMap(_memorySlots.value)
+        map[slot] = num
+        _memorySlots.value = map
+        _memoryValue.value = num
+    }
+
+    fun memoryAdd(slot: String = _selectedMemorySlot.value) {
+        val num = getCurrentActiveNumber() ?: return
+        val map = LinkedHashMap(_memorySlots.value)
+        val currentVal = map[slot] ?: 0.0
+        val newVal = currentVal + num
+        map[slot] = newVal
+        _memorySlots.value = map
+        _memoryValue.value = newVal
+    }
+
+    fun memorySubtract(slot: String = _selectedMemorySlot.value) {
+        val num = getCurrentActiveNumber() ?: return
+        val map = LinkedHashMap(_memorySlots.value)
+        val currentVal = map[slot] ?: 0.0
+        val newVal = currentVal - num
+        map[slot] = newVal
+        _memorySlots.value = map
+        _memoryValue.value = newVal
+    }
+
+    fun memoryRecall(slot: String = _selectedMemorySlot.value) {
+        val num = _memorySlots.value[slot] ?: return
+        appendScientificToken(df.format(num).replace(",", ""))
+    }
+
+    fun memoryClear(slot: String = _selectedMemorySlot.value) {
+        val map = LinkedHashMap(_memorySlots.value)
+        map[slot] = 0.0
+        _memorySlots.value = map
+        if (slot == _selectedMemorySlot.value) {
+            _memoryValue.value = 0.0
+        }
+    }
+
+    fun memoryClearAll() {
+        val map = LinkedHashMap(_memorySlots.value)
+        for (key in map.keys) {
+            map[key] = 0.0
+        }
+        _memorySlots.value = map
+        _memoryValue.value = 0.0
+    }
+
     fun appendScientificToken(token: String) {
         val current = _expression.value
         val updated = current + token
@@ -119,24 +205,6 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
         } catch (e: Exception) {
             _liveResult.value = e.message ?: "Syntax Error"
         }
-    }
-
-    fun memoryAdd() {
-        val num = _liveResult.value.replace(",", "").toDoubleOrNull() ?: return
-        _memoryValue.value += num
-    }
-
-    fun memorySubtract() {
-        val num = _liveResult.value.replace(",", "").toDoubleOrNull() ?: return
-        _memoryValue.value -= num
-    }
-
-    fun memoryRecall() {
-        appendScientificToken(df.format(_memoryValue.value).replace(",", ""))
-    }
-
-    fun memoryClear() {
-        _memoryValue.value = 0.0
     }
 
     // --- BUSINESS CALCULATOR STATE ---

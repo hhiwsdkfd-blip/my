@@ -77,6 +77,11 @@ fun FinancialDisplay(
     result: String,
     angleUnit: String? = null,
     hasMemory: Boolean = false,
+    selectedSlot: String = "M1",
+    memorySlots: Map<String, Double> = emptyMap(),
+    onToggleAngle: (() -> Unit)? = null,
+    onOpenMemoryDialog: (() -> Unit)? = null,
+    onRecallSlot: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -98,12 +103,17 @@ fun FinancialDisplay(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     if (angleUnit != null) {
                         Surface(
                             color = SlateSurfaceVariant,
                             shape = RoundedCornerShape(6.dp),
-                            modifier = Modifier.padding(bottom = 4.dp)
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .clickable(enabled = onToggleAngle != null) { onToggleAngle?.invoke() }
                         ) {
                             Text(
                                 text = angleUnit,
@@ -114,18 +124,52 @@ fun FinancialDisplay(
                             )
                         }
                     }
-                    if (hasMemory) {
-                        Surface(
-                            color = AmberContainer,
-                            shape = RoundedCornerShape(6.dp),
-                            modifier = Modifier.padding(bottom = 4.dp)
+
+                    // Multi-Slot Active Memory Pill
+                    Surface(
+                        color = if (hasMemory) AmberContainer else SlateSurfaceVariant,
+                        shape = RoundedCornerShape(6.dp),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .clickable(enabled = onOpenMemoryDialog != null) { onOpenMemoryDialog?.invoke() }
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                         ) {
                             Text(
-                                text = "M",
-                                color = AmberAccent,
+                                text = selectedSlot,
+                                color = if (hasMemory) AmberAccent else TextMuted,
                                 fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                fontWeight = FontWeight.Bold
+                            )
+                            val slotVal = memorySlots[selectedSlot] ?: 0.0
+                            if (slotVal != 0.0) {
+                                Text(
+                                    text = ": ${if (slotVal % 1 == 0.0) slotVal.toLong().toString() else "%.2f".format(slotVal)}",
+                                    color = AmberAccent,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+
+                    // Extra occupied slots pills
+                    memorySlots.filter { it.key != selectedSlot && it.value != 0.0 }.keys.take(2).forEach { otherSlot ->
+                        Surface(
+                            color = SlateSurfaceVariant,
+                            shape = RoundedCornerShape(6.dp),
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .clickable { onRecallSlot?.invoke(otherSlot) }
+                        ) {
+                            Text(
+                                text = otherSlot,
+                                color = TextSecondary,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
                             )
                         }
                     }

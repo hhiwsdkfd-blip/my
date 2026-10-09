@@ -1,0 +1,6 @@
+{
+  "name": "Calc Business Pro",
+  "description": "Professional financial, business and scientific calculator with TVM, Cash Flow, Amortization, and Gemini AI science consultant.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

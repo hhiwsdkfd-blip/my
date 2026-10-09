@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">Calc Business Pro</string>
+    <string name="tab_business">Business</string>
+    <string name="tab_scientific">Scientific</string>
+    <string name="tab_statistics">Statistics</string>
+    <string name="tab_ai_advisor">AI Science</string>
+    <string name="tab_history">History Tape</string>
+    <string name="tvm_calculator">TVM - Time Value of Money</string>
+    <string name="cash_flow_npv_irr">Cash Flows (NPV / IRR)</string>
+    <string name="break_even">Break-Even Analysis</string>
+    <string name="margin_markup">Profit Margin &amp; Markup</string>
+    <string name="depreciation">Asset Depreciation</string>
+    <string name="bond_valuation">Bond Pricing &amp; Yield</string>
+    <string name="loan_mortgage">Loan &amp; Amortization</string>
+    <string name="currency_converter">Currency Exchange</string>
+</resources>
